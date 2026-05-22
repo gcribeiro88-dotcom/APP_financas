@@ -2,7 +2,8 @@ import { createClient } from "@/lib/supabase/server"
 import { logout } from "@/lib/actions/auth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { User, Mail, LogOut } from "lucide-react"
+import { User, Mail, LogOut, Shield } from "lucide-react"
+import Link from "next/link"
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -11,6 +12,7 @@ export default async function ProfilePage() {
   const name = user?.user_metadata?.name || "Usuário"
   const email = user?.email || ""
   const initials = name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()
+  const isAdmin = !!process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL
 
   return (
     <div className="max-w-lg mx-auto">
@@ -45,6 +47,15 @@ export default async function ProfilePage() {
             </div>
           </CardContent>
         </Card>
+
+        {isAdmin && (
+          <Link href="/admin" className="block mt-4">
+            <Button variant="outline" className="w-full">
+              <Shield className="w-4 h-4" />
+              Painel de Administração
+            </Button>
+          </Link>
+        )}
 
         <form action={logout} className="mt-4">
           <Button type="submit" variant="outline" className="w-full text-destructive border-destructive/30 hover:bg-red-50">
