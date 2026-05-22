@@ -6,10 +6,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useState, useTransition } from "react"
-import { DollarSign } from "lucide-react"
+import { DollarSign, MailCheck } from "lucide-react"
 
 export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+  const [registeredEmail, setRegisteredEmail] = useState("")
   const [isPending, startTransition] = useTransition()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -22,10 +24,44 @@ export default function RegisterPage() {
       setError("As senhas não coincidem")
       return
     }
+    setRegisteredEmail(formData.get("email") as string)
     startTransition(async () => {
       const result = await register(formData)
       if (result?.error) setError(result.error)
+      else setSuccess(true)
     })
+  }
+
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <div className="w-full max-w-sm text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-5">
+            <MailCheck className="w-8 h-8 text-green-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground mb-2">Verifique seu e-mail</h1>
+          <p className="text-muted-foreground text-sm mb-1">
+            Enviamos um link de confirmação para:
+          </p>
+          <p className="font-semibold text-foreground mb-5">{registeredEmail}</p>
+          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 text-left space-y-2 mb-6">
+            <p className="text-sm font-medium text-blue-800">O que fazer agora:</p>
+            <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
+              <li>Abra sua caixa de entrada</li>
+              <li>Procure o e-mail de <span className="font-medium">FinançasPessoais</span></li>
+              <li>Clique no link de confirmação</li>
+              <li>Pronto! Você já pode entrar no app</li>
+            </ol>
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">
+            Não recebeu? Verifique também a pasta de spam ou lixo eletrônico.
+          </p>
+          <Link href="/login">
+            <Button variant="outline" className="w-full">Ir para o login</Button>
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (

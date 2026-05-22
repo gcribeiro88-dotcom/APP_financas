@@ -1,7 +1,7 @@
 "use client"
 
 import { formatCurrency } from "@/lib/utils"
-import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from "recharts"
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts"
 
 interface CategoryData {
   name: string
@@ -13,12 +13,16 @@ interface CategoryBarChartProps {
   data: CategoryData[]
 }
 
-function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<{ value: number; payload: CategoryData }> }) {
+function CustomTooltip({ active, payload }: {
+  active?: boolean
+  payload?: Array<{ payload: CategoryData }>
+}) {
   if (!active || !payload?.length) return null
+  const d = payload[0].payload
   return (
-    <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg text-sm">
-      <p className="font-medium text-foreground">{payload[0].payload.name}</p>
-      <p className="text-muted-foreground">{formatCurrency(payload[0].value)}</p>
+    <div className="bg-card border border-border rounded-xl px-3 py-2 shadow-xl text-sm">
+      <p className="font-medium text-foreground">{d.name}</p>
+      <p className="text-muted-foreground">{formatCurrency(d.total)}</p>
     </div>
   )
 }
@@ -26,36 +30,46 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<
 export function CategoryBarChart({ data }: CategoryBarChartProps) {
   if (!data.length) {
     return (
-      <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">
+      <div className="flex items-center justify-center h-52 text-muted-foreground text-sm">
         Sem despesas neste período
       </div>
     )
   }
 
+  const total = data.reduce((s, d) => s + d.total, 0)
+
   return (
-    <ResponsiveContainer width="100%" height={200}>
-      <BarChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} barSize={28}>
-        <XAxis
-          dataKey="name"
-          tick={{ fontSize: 11, fill: "#64748b" }}
-          axisLine={false}
-          tickLine={false}
-          interval={0}
-        />
-        <YAxis
-          tick={{ fontSize: 10, fill: "#94a3b8" }}
-          axisLine={false}
-          tickLine={false}
-          tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
-          width={40}
-        />
-        <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f1f5f9" }} />
-        <Bar dataKey="total" radius={[4, 4, 0, 0]}>
-          {data.map((entry, index) => (
-            <Cell key={index} fill={entry.color} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
+    <div className="flex flex-col sm:flex-row items-center gap-4">
+      <ResponsiveContainer width={180} height={180}>
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            innerRadius={50}
+            outerRadius={80}
+            dataKey="total"
+            paddingAngle={2}
+          >
+            {data.map((entry, i) => (
+              <Cell key={i} fill={entry.color} />
+            ))}
+          </Pie>
+          <Tooltip content={<CustomTooltip />} />
+        </PieChart>
+      </ResponsiveContainer>
+
+      <div className="flex flex-col gap-2 flex-1 min-w-0">
+        {data.slice(0, 6).map((d) => (
+          <div key={d.name} className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+            <span className="text-xs text-muted-foreground truncate flex-1">{d.name}</span>
+            <span className="text-xs font-medium text-foreground shrink-0">
+              {((d.total / total) * 100).toFixed(0)}%
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }

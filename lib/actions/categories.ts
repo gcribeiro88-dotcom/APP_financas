@@ -40,7 +40,10 @@ export async function createCategory(formData: FormData) {
     is_default: false,
   } as never)
 
-  if (error) return { error: (error as Error).message }
+  if (error) {
+    console.error("[createCategory] Supabase error:", error)
+    return { error: error.message }
+  }
 
   revalidatePath("/categories")
   return { success: true }

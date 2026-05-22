@@ -3,6 +3,10 @@
 -- Execute no SQL Editor do Supabase
 -- =============================================
 
+-- Limpa objetos anteriores (seguro re-executar)
+drop table if exists public.transactions cascade;
+drop table if exists public.categories cascade;
+
 -- Extensão para UUIDs
 create extension if not exists "pgcrypto";
 
@@ -70,6 +74,12 @@ create policy "Usuários editam suas transações"
 create policy "Usuários excluem suas transações"
   on public.transactions for delete
   using (user_id = auth.uid());
+
+-- =============================================
+-- GRANTS: permissões de acesso às tabelas
+-- =============================================
+grant select, insert, update, delete on public.categories to anon, authenticated;
+grant select, insert, update, delete on public.transactions to anon, authenticated;
 
 -- =============================================
 -- SEED: Categorias padrão

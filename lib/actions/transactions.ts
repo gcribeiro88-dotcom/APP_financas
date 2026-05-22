@@ -120,6 +120,48 @@ export async function getTransactions(
   return (data ?? []) as unknown as Transaction[]
 }
 
+export async function getMonthlyTrend(year: number, month: number) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  let startMonth = month - 5
+  let startYear = year
+  while (startMonth <= 0) { startMonth += 12; startYear-- }
+
+  const start = `${startYear}-${String(startMonth).padStart(2, "0")}-01`
+  const end = new Date(year, month, 0).toISOString().split("T")[0]
+
+  const { data } = await supabase
+    .from("transactions")
+    .select("type, amount, date")
+    .eq("user_id", user.id)
+    .gte("date", start)
+    .lte("date", end)
+
+  const all = (data ?? []) as Array<{ type: string; amount: number; date: string }>
+
+  const monthMap: Record<string, { label: string; receitas: number; despesas: number }> = {}
+  for (let i = 5; i >= 0; i--) {
+    let m = month - i
+    let y = year
+    while (m <= 0) { m += 12; y-- }
+    const key = `${y}-${String(m).padStart(2, "0")}`
+    const label = new Date(y, m - 1).toLocaleDateString("pt-BR", { month: "short" })
+    monthMap[key] = { label: label.charAt(0).toUpperCase() + label.slice(1), receitas: 0, despesas: 0 }
+  }
+
+  for (const t of all) {
+    const key = t.date.slice(0, 7)
+    if (monthMap[key]) {
+      if (t.type === "income") monthMap[key].receitas += Number(t.amount)
+      else monthMap[key].despesas += Number(t.amount)
+    }
+  }
+
+  return Object.values(monthMap)
+}
+
 export async function getDashboardData(year: number, month: number) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

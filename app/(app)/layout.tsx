@@ -6,7 +6,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="pb-20 md:pb-0">{children}</main>
+      <main className="pb-20">{children}</main>
       <BottomNav categories={categories} />
     </div>
   )
