@@ -5,26 +5,30 @@ const PROTECTED_PATHS = ["/dashboard", "/transactions", "/categories", "/profile
 const AUTH_PATHS = ["/login", "/register"]
 
 export async function proxy(request: NextRequest) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  // Se as vars não estão definidas (misconfiguration), deixa passar sem travar
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return NextResponse.next({ request })
+  }
+
   const response = NextResponse.next({ request })
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          )
-        },
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll()
       },
-    }
-  )
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) =>
+          response.cookies.set(name, value, options)
+        )
+      },
+    },
+  })
 
-  // getUser() valida o token no servidor — nunca confie apenas no cookie do lado cliente
+  // getUser() valida o JWT no servidor — nunca confie apenas no cookie do cliente
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
