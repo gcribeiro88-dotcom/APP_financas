@@ -1,8 +1,11 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
+const PROTECTED_PATHS = ["/dashboard", "/transactions", "/categories", "/profile"]
+const AUTH_PATHS = ["/login", "/register"]
+
 export async function proxy(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
+  const response = NextResponse.next({ request })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,30 +16,30 @@ export async function proxy(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            response.cookies.set(name, value, options)
           )
         },
       },
     }
   )
 
+  // getUser() valida o token no servidor — nunca confie apenas no cookie do lado cliente
   const { data: { user } } = await supabase.auth.getUser()
-
   const { pathname } = request.nextUrl
-  const isAuthRoute = pathname.startsWith("/login") || pathname.startsWith("/register")
 
-  if (!user && !isAuthRoute) {
+  const isProtected = PROTECTED_PATHS.some((p) => pathname.startsWith(p))
+  const isAuthPage = AUTH_PATHS.some((p) => pathname.startsWith(p))
+
+  if (isProtected && !user) {
     return NextResponse.redirect(new URL("/login", request.url))
   }
 
-  if (user && isAuthRoute) {
+  if (isAuthPage && user) {
     return NextResponse.redirect(new URL("/dashboard", request.url))
   }
 
-  return supabaseResponse
+  return response
 }
 
 export const config = {
